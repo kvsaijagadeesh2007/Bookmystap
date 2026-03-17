@@ -5,30 +5,37 @@ enum RoomType { SINGLE, DOUBLE, DELUXE }
 class Hotel {
     private Map<RoomType, Integer> inventory = new HashMap<>();
 
-    // Initialize static inventory
     public Hotel() {
         inventory.put(RoomType.SINGLE, 3);
         inventory.put(RoomType.DOUBLE, 3);
         inventory.put(RoomType.DELUXE, 2);
     }
 
-    // Show available rooms
-    public void showAvailability() {
-        System.out.println("\nAvailable Rooms:");
+    // Show all availability
+    public void showAll() {
+        System.out.println("\nRoom Availability:");
         for (RoomType type : inventory.keySet()) {
             System.out.println(type + " : " + inventory.get(type));
         }
     }
 
-    // Book room using centralized inventory
-    public void bookRoom(RoomType type) {
+    // Search specific room type
+    public void searchRoom(RoomType type) {
         int count = inventory.get(type);
-
         if (count > 0) {
-            inventory.put(type, count - 1);
-            System.out.println(type + " room booked successfully!");
+            System.out.println(type + " rooms available: " + count);
         } else {
-            System.out.println("No " + type + " rooms available!");
+            System.out.println(type + " rooms NOT available!");
+        }
+    }
+
+    // Book room after checking availability
+    public void bookRoom(RoomType type) {
+        if (inventory.get(type) > 0) {
+            inventory.put(type, inventory.get(type) - 1);
+            System.out.println(type + " room booked!");
+        } else {
+            System.out.println("Booking failed! No " + type + " rooms.");
         }
     }
 }
@@ -39,32 +46,34 @@ public class BookMyStayApp {
         Hotel hotel = new Hotel();
 
         while (true) {
-            System.out.println("\n1.View Availability 2.Book Room 3.Exit");
+            System.out.println("\n1.View All 2.Search Room 3.Book Room 4.Exit");
             int choice = sc.nextInt();
 
-            switch (choice) {
-                case 1:
-                    hotel.showAvailability();
-                    break;
+            if (choice == 1) {
+                hotel.showAll();
+            }
+            else if (choice == 2 || choice == 3) {
+                System.out.println("1.SINGLE 2.DOUBLE 3.DELUXE");
+                int t = sc.nextInt();
 
-                case 2:
-                    System.out.println("1.SINGLE 2.DOUBLE 3.DELUXE");
-                    int t = sc.nextInt();
+                if (t < 1 || t > 3) {
+                    System.out.println("Invalid!");
+                    continue;
+                }
 
-                    if (t >= 1 && t <= 3) {
-                        hotel.bookRoom(RoomType.values()[t - 1]);
-                    } else {
-                        System.out.println("Invalid choice!");
-                    }
-                    break;
+                RoomType type = RoomType.values()[t - 1];
 
-                case 3:
-                    System.out.println("Thank you!");
-                    sc.close();
-                    return;
-
-                default:
-                    System.out.println("Invalid option!");
+                if (choice == 2)
+                    hotel.searchRoom(type);
+                else
+                    hotel.bookRoom(type);
+            }
+            else if (choice == 4) {
+                System.out.println("Thank you!");
+                break;
+            }
+            else {
+                System.out.println("Invalid choice!");
             }
         }
     }
