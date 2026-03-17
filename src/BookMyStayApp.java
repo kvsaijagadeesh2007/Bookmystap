@@ -2,62 +2,70 @@ import java.util.*;
 
 enum RoomType { SINGLE, DOUBLE, DELUXE }
 
-class Room {
-    int id;
-    RoomType type;
-    boolean booked;
-
-    Room(int id, RoomType type) {
-        this.id = id;
-        this.type = type;
-    }
-}
-
 class Hotel {
-    List<Room> rooms = new ArrayList<>();
+    private Map<RoomType, Integer> inventory = new HashMap<>();
 
-    Hotel() {
-        for (int i = 1; i <= 3; i++) rooms.add(new Room(i, RoomType.SINGLE));
-        for (int i = 4; i <= 6; i++) rooms.add(new Room(i, RoomType.DOUBLE));
-        for (int i = 7; i <= 8; i++) rooms.add(new Room(i, RoomType.DELUXE));
+    // Initialize static inventory
+    public Hotel() {
+        inventory.put(RoomType.SINGLE, 3);
+        inventory.put(RoomType.DOUBLE, 3);
+        inventory.put(RoomType.DELUXE, 2);
     }
 
-    void showAvailable() {
-        for (Room r : rooms)
-            if (!r.booked)
-                System.out.println(r.id + " - " + r.type);
-    }
-
-    void book(RoomType type) {
-        for (Room r : rooms) {
-            if (r.type == type && !r.booked) {
-                r.booked = true;
-                System.out.println("Booked Room: " + r.id);
-                return;
-            }
+    // Show available rooms
+    public void showAvailability() {
+        System.out.println("\nAvailable Rooms:");
+        for (RoomType type : inventory.keySet()) {
+            System.out.println(type + " : " + inventory.get(type));
         }
-        System.out.println("No rooms available!");
+    }
+
+    // Book room using centralized inventory
+    public void bookRoom(RoomType type) {
+        int count = inventory.get(type);
+
+        if (count > 0) {
+            inventory.put(type, count - 1);
+            System.out.println(type + " room booked successfully!");
+        } else {
+            System.out.println("No " + type + " rooms available!");
+        }
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        Hotel h = new Hotel();
+        Hotel hotel = new Hotel();
 
         while (true) {
-            System.out.println("\n1.View 2.Book 3.Exit");
-            int ch = sc.nextInt();
+            System.out.println("\n1.View Availability 2.Book Room 3.Exit");
+            int choice = sc.nextInt();
 
-            if (ch == 1) h.showAvailable();
-            else if (ch == 2) {
-                System.out.println("1.SINGLE 2.DOUBLE 3.DELUXE");
-                int t = sc.nextInt();
-                if (t >= 1 && t <= 3)
-                    h.book(RoomType.values()[t - 1]);
-                else
-                    System.out.println("Invalid!");
-            } else break;
+            switch (choice) {
+                case 1:
+                    hotel.showAvailability();
+                    break;
+
+                case 2:
+                    System.out.println("1.SINGLE 2.DOUBLE 3.DELUXE");
+                    int t = sc.nextInt();
+
+                    if (t >= 1 && t <= 3) {
+                        hotel.bookRoom(RoomType.values()[t - 1]);
+                    } else {
+                        System.out.println("Invalid choice!");
+                    }
+                    break;
+
+                case 3:
+                    System.out.println("Thank you!");
+                    sc.close();
+                    return;
+
+                default:
+                    System.out.println("Invalid option!");
+            }
         }
     }
 }
