@@ -3,6 +3,18 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+class InvalidBookingException extends RuntimeException {
+    public InvalidBookingException(String message) {
+        super(message);
+    }
+}
+
+class BookingNotFoundException extends RuntimeException {
+    public BookingNotFoundException(String message) {
+        super(message);
+    }
+}
+
 class Booking {
     private String bookingId;
     private String userId;
@@ -34,9 +46,7 @@ class Booking {
     public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public void setStatus(String status) { this.status = status; }
 
     @Override
     public String toString() {
@@ -53,36 +63,57 @@ class Booking {
     }
 }
 
+class BookingValidator {
+    public static void validateBooking(Booking booking) {
+        if (booking == null) {
+            throw new InvalidBookingException("Booking cannot be null");
+        }
+        if (booking.getBookingId() == null || booking.getBookingId().isEmpty()) {
+            throw new InvalidBookingException("Invalid booking ID");
+        }
+        if (booking.getUserId() == null || booking.getUserId().isEmpty()) {
+            throw new InvalidBookingException("Invalid user ID");
+        }
+        if (booking.getCheckIn().isAfter(booking.getCheckOut())) {
+            throw new InvalidBookingException("Check-in date must be before check-out date");
+        }
+    }
+}
+
 class BookingManager {
 
     private Map<String, Booking> activeBookings = new HashMap<>();
     private List<Booking> bookingHistory = new ArrayList<>();
 
     public void confirmBooking(Booking booking) {
+        BookingValidator.validateBooking(booking);
+
         if (activeBookings.containsKey(booking.getBookingId())) {
-            System.out.println("Booking ID already exists!");
-            return;
+            throw new InvalidBookingException("Duplicate booking ID");
         }
 
         booking.setStatus("CONFIRMED");
         activeBookings.put(booking.getBookingId(), booking);
         bookingHistory.add(booking);
-
-        System.out.println("Booking confirmed: " + booking.getBookingId());
     }
 
     public void cancelBooking(String bookingId) {
+        if (bookingId == null || bookingId.isEmpty()) {
+            throw new InvalidBookingException("Invalid booking ID");
+        }
+
         Booking booking = activeBookings.get(bookingId);
 
         if (booking == null) {
-            System.out.println("Booking not found!");
-            return;
+            throw new BookingNotFoundException("Booking not found");
+        }
+
+        if ("CANCELLED".equals(booking.getStatus())) {
+            throw new InvalidBookingException("Booking already cancelled");
         }
 
         booking.setStatus("CANCELLED");
         activeBookings.remove(bookingId);
-
-        System.out.println("Booking cancelled: " + bookingId);
     }
 
     public int getTotalBookings() {
@@ -112,7 +143,6 @@ class BookingManager {
     }
 
     public void printAllBookings() {
-        System.out.println("\n--- Booking History ---");
         bookingHistory.forEach(System.out::println);
     }
 }
@@ -123,33 +153,31 @@ public class BookMyStayApp {
 
         BookingManager manager = new BookingManager();
 
-        Booking b1 = new Booking("B001", "U001", "H001", 101,
-                LocalDate.now(), LocalDate.now().plusDays(2));
+        try {
+            Booking b1 = new Booking("B001", "U001", "H001", 101,
+                    LocalDate.now(), LocalDate.now().plusDays(2));
 
-        Booking b2 = new Booking("B002", "U002", "H002", 202,
-                LocalDate.now(), LocalDate.now().plusDays(3));
+            Booking b2 = new Booking("B002", "U002", "H002", 202,
+                    LocalDate.now(), LocalDate.now().plusDays(3));
 
-        Booking b3 = new Booking("B003", "U001", "H001", 103,
-                LocalDate.now(), LocalDate.now().plusDays(1));
+            Booking b3 = new Booking("B003", "U001", "H001", 103,
+                    LocalDate.now(), LocalDate.now().plusDays(1));
 
-        manager.confirmBooking(b1);
-        manager.confirmBooking(b2);
-        manager.confirmBooking(b3);
+            manager.confirmBooking(b1);
+            manager.confirmBooking(b2);
+            manager.confirmBooking(b3);
 
-        manager.cancelBooking("B002");
+            manager.cancelBooking("B002");
 
-        System.out.println("\nTotal Bookings: " + manager.getTotalBookings());
+            System.out.println(manager.getTotalBookings());
+            System.out.println(manager.getBookingsByUser("U001"));
+            System.out.println(manager.getBookingStatusSummary());
+            System.out.println(manager.getBookingsPerDay());
 
-        System.out.println("\nBookings by User U001:");
-        manager.getBookingsByUser("U001")
-                .forEach(System.out::println);
+            manager.printAllBookings();
 
-        System.out.println("\nStatus Summary:");
-        System.out.println(manager.getBookingStatusSummary());
-
-        System.out.println("\nBookings Per Day:");
-        System.out.println(manager.getBookingsPerDay());
-
-        manager.printAllBookings();
+        } catch (InvalidBookingException | BookingNotFoundException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 }
